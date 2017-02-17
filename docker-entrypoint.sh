@@ -1,7 +1,8 @@
 #!/bin/sh
 
-exec /usr/bin/pjsua /pjsua.conf \
+exec /usr/bin/pjsua \
   --log-level 0 --app-log-level 0 \
+  --null-audio \
   --reg-timeout 300 \
   --realm '*' \
   --use-srtp=0 \
@@ -9,5 +10,5 @@ exec /usr/bin/pjsua /pjsua.conf \
   --reg-use-proxy=3 \
   --auto-update-nat=1 \
   --disable-stun \
-  --null-audio \
+  --max-calls 99 \
   "$@"
