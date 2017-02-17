@@ -10,5 +10,5 @@ exec /usr/bin/pjsua \
   --reg-use-proxy=3 \
   --auto-update-nat=1 \
   --disable-stun \
-  --max-calls 99 \
+  --max-calls 20 \
   "$@"
