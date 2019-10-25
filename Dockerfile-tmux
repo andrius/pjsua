@@ -3,7 +3,9 @@ FROM alpine:latest
 
 LABEL maintainer="Andrius Kairiukstis <k@andrius.mobi>"
 
-RUN apk add --update --no-cache pjsua \
+RUN apk add --update --no-cache \
+      pjsua \
+      tmux \
  && rm -rf /var/cache/apk/* \
            /tmp/* \
            /var/tmp/*

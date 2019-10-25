@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  tmux:
+    build: .
+    #command:
+    #  - 'pjsua command-line arguments here'
+    #tty: true
+    #environment:
+    #  - TERM=xterm
+
+
