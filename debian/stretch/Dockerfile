@@ -1,13 +1,14 @@
 # vim:set ft=dockerfile:
-FROM debian:buster-slim
+FROM debian:stretch-slim
 
 LABEL maintainer="Andrius Kairiukstis <k@andrius.mobi>"
 
 ENV PJPROJECT_VERSION=2.9
+
 ENV BUILD_PACKAGES="curl \
-                     bzip2 \
-                     build-essential \
-                     libasound2-dev"
+                    bzip2 \
+                    build-essential \
+                    libasound2-dev"
 
 RUN apt-get update \
  && apt-get \

@@ -1,0 +1,44 @@
+#!/bin/sh
+
+SIP_ACCOUNT=$1
+DESTINATION=$2
+
+if [ "${SIP_ACCOUNT}" == "" ]; then
+  echo "Start app with two arguments: sip_account_username and destination_number. Exiting"
+  exit 1
+fi
+
+if [ "${DESTINATION}" == "" ]; then
+  echo "Start app with two arguments: sip_account_username and destination_number. Exiting"
+  exit 1
+fi
+
+pjsua \
+  --null-audio \
+  --log-level 0 \
+  --app-log-level 0 \
+  --color \
+  --light-bg \
+  --local-port ${LOCAL_PORT:-50010} \
+  --rtp-port ${RTP_PORT:-50011} \
+  --snd-auto-close 1 \
+  --null-audio \
+  --max-calls 15 \
+  --no-vad \
+  --use-compact-form \
+  --registrar sip:${ASTERISK_HOST}:${ASTERISK_SIP_PORT} \
+  --proxy sip:${ASTERISK_HOST}:${ASTERISK_SIP_PORT} \
+  --outbound sip:${ASTERISK_HOST}:${ASTERISK_SIP_PORT} \
+  --reg-timeout 300 \
+  --realm '*' \
+  --use-srtp=0 \
+  --srtp-secure=0 \
+  --use-timer 1 \
+  --reg-use-proxy=3 \
+  --auto-update-nat=1 \
+  --disable-stun \
+  --username ${SIP_ACCOUNT} \
+  --id sip:${SIP_ACCOUNT}@${ASTERISK_HOST}:${ASTERISK_SIP_PORT} \
+  --contact sip:${SIP_ACCOUNT}@${ASTERISK_HOST}:${ASTERISK_SIP_PORT} \
+  --password ${ASTERISK_SIP_PASSWORD} \
+  sip:${DESTINATION}@${ASTERISK_HOST}:${ASTERISK_SIP_PORT}

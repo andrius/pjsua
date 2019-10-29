@@ -1,0 +1,49 @@
+#!/bin/sh
+
+SIP_ACCOUNT=$1
+
+if [ "${SIP_ACCOUNT}" == "" ]; then
+  echo "Start app with two arguments: sip_account_username and destination_number. Exiting"
+  exit 1
+fi
+
+ASTERISK_HOST=${ASTERISK_HOST:-asterisk}
+ASTERISK_SIP_PORT=5060
+SIP_PASSWORD=${SIP_PASSWORD:-asterisk.cr}
+
+# udp, tcp
+SIP_TRANSPORT=udp
+
+# random ports in a range
+LOCAL_PORT=$(shuf -i 50001-55999 -n 1)
+RTP_PORT=$(shuf -i 56001-59999 -n 1)
+
+pjsua \
+  --log-level=0 \
+  --app-log-level=0 \
+  --no-stderr \
+  --color \
+  --light-bg \
+  --null-audio \
+  --snd-auto-close=0 \
+  --max-calls=15 \
+  --no-vad \
+  --use-compact-form \
+  --reg-timeout=90 \
+  --rereg-delay=90 \
+  --use-srtp=0 \
+  --srtp-secure=0 \
+  --rtcp-mux \
+  --use-timer=1 \
+  --reg-use-proxy=3 \
+  --auto-update-nat=1 \
+  --disable-stun \
+  --local-port=${LOCAL_PORT} \
+  --rtp-port=${RTP_PORT} \
+  --realm="*" \
+  --registrar="sip:${ASTERISK_HOST}:${ASTERISK_SIP_PORT};transport=tcp" \
+  --proxy="sip:${ASTERISK_HOST}:${ASTERISK_SIP_PORT};transport=tcp" \
+  --outbound="sip:${ASTERISK_HOST}:${ASTERISK_SIP_PORT};transport=tcp" \
+  --id="sip:${SIP_ACCOUNT}@${ASTERISK_HOST}:${ASTERISK_SIP_PORT};transport=tcp" \
+  --username="${SIP_ACCOUNT}" \
+  --password="${SIP_PASSWORD}"

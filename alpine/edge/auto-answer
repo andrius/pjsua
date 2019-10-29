@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# random ports in a range
+local_port=$(shuf -i 50001-55999 -n 1)
+rtp_port=$(shuf -i 56001-59999 -n 1)
+pjsua \
+  --log-level 3 \
+  --app-log-level 3 \
+  --color \
+  --light-bg \
+  --null-audio \
+  --max-calls 15 \
+  --no-vad \
+  --no-udp \
+  --rtcp-mux \
+  --use-compact-form \
+  --reg-timeout 300 \
+  --use-srtp=0 \
+  --srtp-secure=0 \
+  --use-timer 1 \
+  --reg-use-proxy=3 \
+  --auto-update-nat=1 \
+  --disable-stun \
+  --local-port ${local_port} \
+  --rtp-port ${rtp_port} \
+  --username "${REGISTER_USERNAME}" \
+  --realm "${REGISTER_DOMAIN}" \
+  --password "${REGISTER_PASSWORD}" \
+  --id "sip:${REGISTER_USERNAME}@${REGISTER_DOMAIN};transport=tcp" \
+  --contact "sip:${REGISTER_USERNAME}@${REGISTER_DOMAIN};transport=tcp" \
+  --registrar "sip:${REGISTER_DOMAIN}"
