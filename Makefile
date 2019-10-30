@@ -57,7 +57,7 @@ release-all:
 # Usage:
 #	make release [no-cache=(yes|no)] [DOCKERFILE=] [VERSION=] [TAGS=t1,t2,...]
 
-release: | image tags test push
+release: | post-push-hook post-checkout-hook image tags test push
 
 
 
@@ -125,6 +125,74 @@ push:
 
 
 
+# Create `post_push` Docker Hub hook.
+#
+# When Docker Hub triggers automated build all the tags defined in `post_push`
+# hook will be assigned to built image. It allows to link the same image with
+# different tags, and not to build identical image for each tag separately.
+# See details:
+# http://windsock.io/automated-docker-image-builds-with-multiple-tags
+#
+# Usage:
+#	make post-push-hook [DOCKERFILE=] [TAGS=t1,t2,...]
+
+post-push-hook:
+	mkdir -p $(DOCKERFILE)/hooks
+	docker run --rm -i -v $(PWD)/post_push.erb:/post_push.erb:ro \
+		ruby:alpine erb -U \
+			image_tags='$(TAGS)' \
+		/post_push.erb > $(DOCKERFILE)/hooks/post_push
+
+
+
+# Create `post_push` Docker Hub hook for all supported Docker images.
+#
+# Usage:
+#	make post-push-hook-all
+
+post-push-hook-all:
+	(set -e ; $(foreach img,$(ALL_IMAGES), \
+		make post-push-hook \
+			DOCKERFILE=$(word 1,$(subst :, ,$(img))) \
+			TAGS=$(word 2,$(subst :, ,$(img))) ; \
+	))
+
+
+
+# Create `post_checkout` Docker Hub hook.
+#
+# When Docker Hub triggers automated build, the `post_checkout` hook is called
+# after the Git repo is checked out. This can be used to set up prerequisites
+# for, for example, cross-platform builds.
+# See details:
+# https://docs.docker.com/docker-cloud/builds/advanced/#build-hook-examples
+#
+# Usage:
+#	make post-checkout-hook [DOCKERFILE=]
+
+post-checkout-hook:
+	if [ -n "$(findstring /armhf/,$(DOCKERFILE))" ]; then \
+		mkdir -p $(DOCKERFILE)/hooks; \
+		docker run --rm -i -v $(PWD)/post_checkout.erb:/post_checkout.erb:ro \
+			ruby:alpine erb -U \
+				dockerfile='$(DOCKERFILE)' \
+			/post_checkout.erb > $(DOCKERFILE)/hooks/post_checkout ; \
+	fi
+
+
+# Create `post_push` Docker Hub hook for all supported Docker images.
+#
+# Usage:
+#	make post-checkout-hook-all
+
+post-checkout-hook-all:
+	(set -e ; $(foreach img,$(ALL_IMAGES), \
+		make post-checkout-hook \
+			DOCKERFILE=$(word 1,$(subst :, ,$(img))) ; \
+	))
+
+
+
 # Run tests for all supported Docker images.
 #
 # Usage:
@@ -185,4 +253,6 @@ endif
 .PHONY: image tags push \
 	image-all tags-all push-all \
         release release-all \
+        post-push-hook post-push-hook-all \
+	post-checkout-hook post-checkout-hook-all \
         test test-all deps.bats
