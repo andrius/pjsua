@@ -1,13 +1,15 @@
 IMAGE_NAME := andrius/pjsua
 X86_IMAGES := \
-	alpine/latest:latest \
-	alpine/tmux:tmux \
+	alpine/latest:latest,alpine-latest \
+	alpine/tmux:tmux,alpine-tmux \
 	alpine/edge:edge \
 #	<Dockerfile>:<version>
 # OR
 #	<Dockerfile>:<version>,<tag1>,<tag2>,...
 
 ALL_IMAGES := $(X86_IMAGES)
+
+
 
 # Default is first image from ALL_IMAGES list.
 DOCKERFILE ?= $(word 1,$(subst :, ,$(word 1,$(ALL_IMAGES))))
@@ -17,13 +19,45 @@ TAGS ?= $(word 2,$(subst :, ,$(word 1,$(ALL_IMAGES))))
 
 no-cache ?= no
 
-
-
 comma := ,
 empty :=
 space := $(empty) $(empty)
 eq = $(if $(or $(1),$(2)),$(and $(findstring $(1),$(2)),\
                                 $(findstring $(2),$(1))),1)
+
+
+
+# Default Makefile rule:
+# Make manual release of all supported Docker images to Docker Hub.
+# Usage:
+#	make all [no-cache=(yes|no)]
+
+all: | release-all
+
+
+
+# Make manual release of all supported Docker images to Docker Hub.
+#
+# Usage:
+#	make release-all [no-cache=(yes|no)]
+
+release-all:
+	(set -e ; $(foreach img,$(ALL_IMAGES), \
+		make release no-cache=$(no-cache) \
+			DOCKERFILE=$(word 1,$(subst :, ,$(img))) \
+			VERSION=$(word 1,$(subst $(comma), ,\
+					 $(word 2,$(subst :, ,$(img))))) \
+			TAGS=$(word 2,$(subst :, ,$(img))) ; \
+	))
+
+
+
+# Make manual release of Docker images to Docker Hub.
+#
+# Usage:
+#	make release [no-cache=(yes|no)] [DOCKERFILE=] [VERSION=] [TAGS=t1,t2,...]
+
+release: | image tags test push
 
 
 
@@ -37,7 +71,7 @@ image-all:
 		make image no-cache=$(no-cache) \
 			DOCKERFILE=$(word 1,$(subst :, ,$(img))) \
 			VERSION=$(word 1,$(subst $(comma), ,\
-			                 $(word 2,$(subst :, ,$(img))))) ; \
+					 $(word 2,$(subst :, ,$(img))))) ; \
 	))
 
 
@@ -68,18 +102,6 @@ tags:
 
 
 
-# Manually push Docker images to Docker Hub.
-#
-# Usage:
-#	make push [TAGS=t1,t2,...]
-
-push:
-	(set -e ; $(foreach tag, $(parsed-tags), \
-		docker push $(IMAGE_NAME):$(tag) ; \
-	))
-
-
-
 # Manually push all supported Docker images to Docker Hub.
 
 push-all:
@@ -90,39 +112,16 @@ push-all:
 
 
 
-# Make manual release of Docker images to Docker Hub.
+# Manually push Docker images to Docker Hub.
 #
 # Usage:
-#	make release [no-cache=(yes|no)] [DOCKERFILE=] [VERSION=] [TAGS=t1,t2,...]
+#	make push [TAGS=t1,t2,...]
 
-release: | image tags push
-
-
-
-# Make manual release of all supported Docker images to Docker Hub.
-#
-# Usage:
-#	make release-all [no-cache=(yes|no)]
-
-release-all:
-	(set -e ; $(foreach img,$(ALL_IMAGES), \
-		make release no-cache=$(no-cache) \
-			DOCKERFILE=$(word 1,$(subst :, ,$(img))) \
-			VERSION=$(word 1,$(subst $(comma), ,\
-			                 $(word 2,$(subst :, ,$(img))))) \
-			TAGS=$(word 2,$(subst :, ,$(img))) ; \
+push:
+	(set -e ; $(foreach tag, $(parsed-tags), \
+		docker push $(IMAGE_NAME):$(tag) ; \
+		docker rmi ${IMAGE_NAME}:${tag} ; \
 	))
-
-
-
-# Run tests for Docker image.
-#
-# Usage:
-#	make test [DOCKERFILE=] [VERSION=]
-
-test: deps.bats
-	DOCKERFILE=$(DOCKERFILE) IMAGE=$(IMAGE_NAME):$(VERSION) \
-		./test/bats/bats test/pjsua.bats
 
 
 
@@ -139,15 +138,27 @@ ifeq ($(prepare-images),yes)
 		make image no-cache=$(no-cache) \
 			DOCKERFILE=$(word 1,$(subst :, ,$(img))) \
 			VERSION=$(word 1,$(subst $(comma), ,\
-			                 $(word 2,$(subst :, ,$(img))))) ; \
+					 $(word 2,$(subst :, ,$(img))))) ; \
 	))
 endif
 	(set -e ; $(foreach img,$(ALL_IMAGES), \
 		make test \
 			DOCKERFILE=$(word 1,$(subst :, ,$(img))) \
 			VERSION=$(word 1,$(subst $(comma), ,\
-			                 $(word 2,$(subst :, ,$(img))))) ; \
+					 $(word 2,$(subst :, ,$(img))))) ; \
 	))
+
+
+
+# Run tests for Docker image.
+#
+# Usage:
+#	make test [DOCKERFILE=] [VERSION=]
+
+test: deps.bats
+	DOCKERFILE=$(DOCKERFILE) IMAGE=$(IMAGE_NAME):$(VERSION) \
+		./test/bats/bats test/pjsua.bats
+
 
 
 # Resolve project dependencies for running Bats tests.
